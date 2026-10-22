@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Academia de Tiro · Aprende a programar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+.wrap{max-width:960px;margin:0 auto;padding:32px 16px}
+h1{font:700 2.2rem var(--ui);margin:0}.sub{color:var(--muted);margin:6px 0 24px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{display:block;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .12s,border-color .12s;position:relative}
+.card:hover{transform:translateY(-3px);border-color:var(--cyan)}
+.card b{font:700 1.15rem var(--ui);display:block;margin:6px 0 4px}.card span{color:var(--muted);font-size:.92rem}
+.num{font:700 .8rem var(--ui);color:var(--cyan)}
+.done::after{content:"✓ Completada";position:absolute;top:14px;right:14px;font:700 .75rem var(--ui);color:#06281a;background:var(--ok);padding:2px 8px;border-radius:99px}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font:600 .85rem var(--body);margin-top:20px;padding:0;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Academia de Tiro</h1>
+  <p class="sub">Aprende a programar disparando. Completa las lecciones en orden y termina con el examen final.</p>
+  <div class="grid" id="grid"></div>
+  <button class="link" id="reset">Borrar mi progreso</button>
+</div>
+<script>
+const L = [
+  ['01-variables', 'Variables', 'La capacidad del cargador: guarda valores en una caja.'],
+  ['02-condicionales', 'Condicionales', 'Recarga inteligente: toma decisiones con if.'],
+  ['03-bucles', 'Bucles', 'Ráfaga de disparos: repite acciones con for.'],
+  ['04-funciones', 'Funciones', 'El arsenal: recetas con parámetros y return.'],
+  ['05-arrays', 'Arrays + Examen final', 'El inventario de armas y un examen de 5 preguntas.']
+];
+const got = i => { try { return localStorage.getItem('academia:leccion' + (i + 1)) === '1'; } catch (e) { return false; } };
+document.getElementById('grid').innerHTML = L.map((l, i) =>
+  `<a class="card ${got(i) ? 'done' : ''}" href="lecciones/${l[0]}.html"><span class="num">LECCIÓN ${i + 1}</span><b>${l[1]}</b><span>${l[2]}</span></a>`).join('');
+document.getElementById('reset').onclick = () => { try { for (let i = 1; i <= 5; i++) localStorage.removeItem('academia:leccion' + i); } catch (e) {} location.reload(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Academia de Tiro · Demo 3: Bucles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <a class="chip" href="../index.html" style="text-decoration:none">← Menú</a>
+    <h1>Academia de Tiro</h1>
+    <span class="chip">Lección 3 · Bucles</span>
+    <div class="progress" aria-label="Progreso">Progreso <i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+  </header>
+
+  <aside class="panel explain">
+    <h2>Ráfaga de disparos</h2>
+    <p>Un <b>bucle</b> repite una acción las veces que tú quieras, sin escribirla una y otra vez. Así funciona una ametralladora.</p>
+    <div class="box">
+      <svg width="64" height="54" viewBox="0 0 64 54" aria-hidden="true"><circle cx="14" cy="27" r="6" fill="#ffd23f"/><circle cx="32" cy="27" r="6" fill="#ffd23f"/><circle cx="50" cy="27" r="6" fill="#ffd23f"/><path d="M8 8h40l-6-6M48 8l-6 6" stroke="#3ee6ff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      <span>En vez de apretar el gatillo 5 veces, le dices a la computadora: <b>repite 5 veces</b>.</span>
+    </div>
+    <div class="parts">
+      <div><span class="tag t1">for</span> significa “repetir”</div>
+      <div><span class="tag t2">let i = 0</span> el contador empieza en 0</div>
+      <div><span class="tag t3">i &lt; 1</span> repite mientras i sea menor que 1</div>
+      <div><span class="tag t1">i++</span> suma 1 al contador en cada vuelta</div>
+    </div>
+    <div class="mission"><b>Misión:</b> hay 8 enemigos blindados (3 de vida cada uno) y 30 segundos. Con 1 bala por ráfaga no alcanza. Cambia el número para disparar más balas con cada clic.</div>
+  </aside>
+
+  <main class="main">
+    <section class="panel">
+      <div class="hud">
+        <div class="ammo big" id="big">Ráfaga 1</div>
+        <div class="bar" aria-hidden="true"><b id="fill"></b></div>
+        <div class="stat">Objetivos <span id="s1"></span></div>
+        <div class="stat">Tiempo <span id="s2"></span>s</div>
+      </div>
+      <div class="stage" id="stage"><canvas id="cv" aria-label="Campo de tiro: haz clic para disparar"></canvas></div>
+      <div class="row">
+        <button class="ghost" id="reset">Reiniciar misión</button>
+        <span class="stat">Apunta con el mouse o el dedo y haz clic para disparar.</span>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="code-h"><h2>Tu código</h2><span>Cambia el número de vueltas y pulsa Ejecutar (Ctrl + Enter)</span></div>
+      <div class="editor">
+        <div class="ln">1
+2
+3
+4</div>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Editor de código">// Cada clic ejecuta este bucle
+for (let i = 0; i &lt; 1; i++) {
+  disparar();
+}</textarea>
+      </div>
+      <div class="row">
+        <button class="run" id="run">Ejecutar código</button>
+        <button class="ghost" id="hintBtn">Ver pista</button>
+      </div>
+      <div id="hint">Pista: el bucle da tantas vueltas como indique el número de la condición. Cambia el 1 por 5.</div>
+      <div id="msg" role="status" aria-live="polite">Prueba un clic: con este código sale una sola bala por ráfaga. Los enemigos blindados necesitan 3 impactos.</div>
+    </section>
+  </main>
+</div>
+
+<script src="../js/engine.js"></script>
+<script>
+const NEEDED = 8, HP = 3, CD = 1, GOOD = 4;
+let G;
+function parse(code) {
+  const src = stripCode(code);
+  if (!/^for\b/.test(src)) return { err: 'La primera palabra debe ser for, que significa “repetir”.' };
+  if (/i--/.test(src)) return { err: 'Aquí el contador sube: usa i++ en lugar de i--.' };
+  const m = src.match(/^for\s*\(\s*let\s+i\s*=\s*(\d+)\s*;\s*i\s*(<=|<)\s*(\d+)\s*;\s*i\+\+\s*\)\s*\{\s*disparar\(\s*\)\s*;?\s*\}$/);
+  if (!m) {
+    if (!/\(.*;.*;.*\)/.test(src)) return { err: 'Después de for van paréntesis con tres partes separadas por ; así: (let i = 0; i < 5; i++)' };
+    if (!/\{/.test(src) || !/\}/.test(src)) return { err: 'Faltan las llaves { }. Encierran lo que se repite.' };
+    if (!/disparar\(\s*\)/.test(src)) return { err: 'Dentro de las llaves escribe disparar(); con paréntesis y punto y coma.' };
+    return { err: 'Algo no encaja. Revisa: for (let i = 0; i < 5; i++) { disparar(); }' };
+  }
+  const st = +m[1], n = +m[3], c = Math.max(0, m[2] === '<' ? n - st : n - st + 1);
+  if (c === 0) return { err: 'Ese bucle no da ninguna vuelta, así que nunca dispara. Revisa los números.' };
+  if (c > 15) return { err: 'Un bucle de ' + c + ' vueltas sobrecalienta el arma. Usa 15 o menos.' };
+  return { n: c };
+}
+function newGame(n) {
+  G = { n, cd: 0, time: 30, state: 'play', t: [], b: [], q: [] };
+  for (let i = 0; i < NEEDED; i++) { const r = i % 3; G.t.push({ x: 50 + Math.random() * (W - 100), y: 62 + r * 58, r: 22, hp: HP, vx: (Math.random() < .5 ? -1 : 1) * (45 + Math.random() * 50), hue: [190, 330, 48][r] }); }
+  setUnlocked(n >= GOOD);
+}
+function onShoot() {
+  if (G.state !== 'play' || G.cd > 0) return;
+  G.cd = CD;
+  for (let k = 0; k < G.n; k++) G.q.push({ d: k * .05, a: aim + (k - (G.n - 1) / 2) * .11 });
+}
+function step(dt) {
+  if (G.state !== 'play') return;
+  G.time -= dt; G.cd -= dt;
+  G.q.forEach(s => { s.d -= dt; if (s.d <= 0) { s.go = true; G.b.push({ x: TX + Math.cos(s.a) * 44, y: TY + Math.sin(s.a) * 44, vx: Math.cos(s.a) * 760, vy: Math.sin(s.a) * 760 }); flash = .08; shake = 2; } });
+  G.q = G.q.filter(s => !s.go);
+  G.t.forEach(t => { t.x += t.vx * dt; if (t.x < t.r || t.x > W - t.r) { t.x = Math.max(t.r, Math.min(W - t.r, t.x)); t.vx *= -1; } });
+  G.b.forEach(b => {
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    for (const t of G.t) if (!t.dead && Math.hypot(b.x - t.x, b.y - t.y) < t.r + 4) { b.gone = true; t.hp--; if (t.hp <= 0) { t.dead = true; boom(t.x, t.y, t.hue); } else { boom(t.x, t.y, 0, 5); floater(t.x, t.y - 26, '-1', '#ffd23f', 16); } break; }
+    if (b.x < -20 || b.x > W + 20 || b.y < -20) b.gone = true;
+  });
+  G.b = G.b.filter(b => !b.gone); G.t = G.t.filter(t => !t.dead);
+  if (!G.t.length) { G.state = 'win'; say(G.n >= GOOD ? 'ok' : 'warn', G.n >= GOOD ? '¡Misión cumplida! Tu bucle repitió disparar() ' + G.n + ' veces en cada clic. Mecánica mejorada desbloqueada: ráfaga.' : '¡Ganaste con puntería perfecta! Pero con ' + G.n + ' vuelta(s) es muy lento. Prueba con más.'); }
+  else if (G.time <= 0) { G.time = 0; G.state = 'lose'; say('err', 'Se acabó el tiempo con un bucle de ' + G.n + (G.n === 1 ? ' vuelta' : ' vueltas') + '. Los blindados necesitan más impactos por clic. Sube el número.'); }
+}
+function render() {
+  G.t.forEach(t => {
+    [1, .7, .4].forEach((k, i) => { ctx.beginPath(); ctx.arc(t.x, t.y, t.r * k, 0, 6.283); ctx.fillStyle = i === 1 ? '#fff' : `hsl(${t.hue} 95% ${40 + t.hp * 6}%)`; ctx.fill(); });
+    ctx.fillStyle = '#100d1f'; ctx.font = '700 14px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(t.hp, t.x, t.y + 5);
+  });
+  bullets(G.b); turret(G.n >= GOOD ? '#4cf0a0' : '#3ee6ff');
+  if (G.state === 'play' && G.cd > 0) { ctx.fillStyle = '#2f2864'; ctx.fillRect(TX - 40, H - 10, 80, 5); ctx.fillStyle = '#3ee6ff'; ctx.fillRect(TX - 40, H - 10, 80 * (1 - G.cd / CD), 5); }
+  if (G.state !== 'play') overlay(G.state === 'win', G.state === 'win' ? 'Todos los enemigos destruidos' : 'Quedaron ' + G.t.length + ' enemigos');
+}
+function hud() { $('big').textContent = 'Ráfaga ' + G.n; $('fill').style.width = (G.cd > 0 ? (1 - G.cd / CD) * 100 : 100) + '%'; $('s1').textContent = G.t.length; $('s2').textContent = Math.ceil(G.time); }
+function runCode() {
+  const r = parse($('code').value); if (r.err) return say('err', r.err);
+  newGame(r.n);
+  say(r.n >= GOOD ? 'ok' : 'warn', r.n >= GOOD ? '¡Correcto! El bucle da ' + r.n + ' vueltas: cada clic lanza ' + r.n + ' balas en abanico.' : 'Funciona, pero ' + r.n + (r.n === 1 ? ' vuelta' : ' vueltas') + ' todavía es poco para 8 blindados. Prueba con más.');
+}
+$('reset').onclick = () => { newGame(G.n); say('', 'Misión reiniciada con ' + G.n + ' bala(s) por ráfaga.'); };
+newGame(parse($('code').value.replace(/&lt;/g, '<')).n);
+requestAnimationFrame(loop);
+</script>
+<script src="../js/progress.js" data-leccion="3"></script>
+</body>
+</html>

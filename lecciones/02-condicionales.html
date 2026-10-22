@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Academia de Tiro · Demo 2: Condicionales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <a class="chip" href="../index.html" style="text-decoration:none">← Menú</a>
+    <h1>Academia de Tiro</h1>
+    <span class="chip">Lección 2 · Condicionales</span>
+    <div class="progress" aria-label="Progreso">Progreso <i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+  </header>
+
+  <aside class="panel explain">
+    <h2>Recarga inteligente</h2>
+    <p>Un <b>condicional</b> le enseña al programa a decidir: <b>si</b> pasa algo, entonces hace algo. Es como un guardia que mira el semáforo.</p>
+    <div class="box">
+      <svg width="64" height="54" viewBox="0 0 64 54" aria-hidden="true"><rect x="20" y="2" width="24" height="50" rx="9" fill="#2f2864"/><circle cx="32" cy="14" r="7" fill="#ff5c93"/><circle cx="32" cy="27" r="7" fill="#3a3270"/><circle cx="32" cy="40" r="7" fill="#3a3270"/></svg>
+      <span>Si el semáforo está en rojo, frenas. Si <b>no hay balas</b>, recargas.</span>
+    </div>
+    <div class="parts">
+      <div><span class="tag t1">if</span> significa “si”</div>
+      <div><span class="tag t2">(balas === 0)</span> la pregunta: ¿quedan 0 balas?</div>
+      <div><span class="tag t3">{ }</span> lo que se hace si la respuesta es sí</div>
+      <div><span class="tag t1">===</span> igual · <span class="tag t1">&lt;</span> menor · <span class="tag t1">&gt;</span> mayor</div>
+    </div>
+    <div class="mission"><b>Misión:</b> el código de la torreta tiene un error: recarga cuando le <i>quedan</i> balas. Arréglalo para que recargue solo cuando se queda en 0, y destruye los 12 objetivos.</div>
+  </aside>
+
+  <main class="main">
+    <section class="panel">
+      <div class="hud">
+        <div class="ammo" id="ammo">8/8</div>
+        <div class="pips" id="pips" aria-hidden="true"></div>
+        <div class="stat">Objetivos <span id="tleft">12</span></div>
+        <div class="stat">Tiempo <span id="time">30</span>s</div>
+      </div>
+      <div class="stage" id="stage"><canvas id="cv" aria-label="Campo de tiro: haz clic para disparar"></canvas></div>
+      <div class="row">
+        <button class="ghost" id="reset">Reiniciar misión</button>
+        <span class="stat">Apunta y haz clic para disparar. Tu código decide cuándo recargar.</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="code-h"><h2>Tu código</h2><span>Arregla la condición y pulsa Ejecutar (Ctrl + Enter)</span></div>
+      <div class="editor">
+        <div class="ln">1
+2
+3
+4</div>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Editor de código">if (balas > 0) {
+  recargar();
+}</textarea>
+      </div>
+      <div class="row">
+        <button class="run" id="run">Ejecutar código</button>
+        <button class="ghost" id="hintBtn">Ver pista</button>
+      </div>
+      <div id="hint">Pista: la condición debe ser verdadera solo cuando balas vale 0. Cambia el &gt; por ===.</div>
+      <div id="msg" role="status" aria-live="polite">Mira la torreta: con este código recarga todo el tiempo, incluso con el cargador lleno.</div>
+    </section>
+  </main>
+</div>
+
+<script>
+const W = 640, H = 400, CAP = 8, RELOAD = 1.6, NEEDED = 12;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+(function fit() { const d = Math.min(window.devicePixelRatio || 1, 2); cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); })();
+const TX = W / 2, TY = H - 26;
+let G, last = performance.now();
+const OPS = { '===': (a, b) => a === b, '==': (a, b) => a == b, '!==': (a, b) => a !== b, '<=': (a, b) => a <= b, '>=': (a, b) => a >= b, '<': (a, b) => a < b, '>': (a, b) => a > b };
+
+// Analiza el código del alumno sin usar eval
+function parse(code) {
+  const src = code.split('\n').filter(l => !l.trim().startsWith('//')).join(' ').trim();
+  if (!/^if\b/.test(src)) return { err: 'La primera palabra debe ser if, que significa “si”.' };
+  if (!/^if\s*\(/.test(src)) return { err: 'Después de if van paréntesis: if ( ... ). Ahí dentro va la pregunta.' };
+  const m = src.match(/^if\s*\(\s*balas\s*(===|==|!==|<=|>=|<|>)\s*(-?\d+)\s*\)\s*\{\s*recargar\(\s*\)\s*;?\s*\}$/);
+  if (!m) {
+    if (!/balas/.test(src)) return { err: 'La pregunta debe usar la variable balas. Por ejemplo: balas === 0' };
+    if (!/\{/.test(src) || !/\}/.test(src)) return { err: 'Faltan las llaves { }. Encierran lo que pasa cuando la respuesta es sí.' };
+    if (!/recargar\(\s*\)/.test(src)) return { err: 'Dentro de las llaves escribe recargar(); con paréntesis y punto y coma.' };
+    return { err: 'Algo no encaja. Revisa que tengas: if (balas ... 0) { recargar(); }' };
+  }
+  const f = OPS[m[1]], n = parseInt(m[2], 10);
+  return { fn: b => f(b, n), text: 'balas ' + m[1] + ' ' + n };
+}
+
+function newGame(rule) {
+  G = { rule, ammo: CAP, reload: 0, cool: 0, time: 30, state: 'play', aim: -Math.PI / 2, t: [], b: [], p: [], flash: 0, shake: 0, reloads: 0, early: 0, stuck: 0 };
+  for (let i = 0; i < NEEDED; i++) {
+    const row = i % 3;
+    G.t.push({ x: 50 + Math.random() * (W - 100), y: 62 + row * 56, r: 19, vx: (Math.random() < .5 ? -1 : 1) * (50 + Math.random() * 60) * (1 + row * .15), hue: [190, 330, 48][row], ph: Math.random() * 6 });
+  }
+  const ok = ruleIsPerfect(rule);
+  $('stage').classList.toggle('unlocked', ok);
+}
+function ruleIsPerfect(r) { for (let a = 0; a <= CAP; a++) if (r(a) !== (a === 0)) return false; return true; }
+
+function shoot() {
+  if (G.state !== 'play' || G.reload > 0 || G.cool > 0 || G.ammo <= 0) return;
+  G.ammo--; G.cool = .14; G.flash = .08; G.shake = 2;
+  G.b.push({ x: TX + Math.cos(G.aim) * 44, y: TY + Math.sin(G.aim) * 44, vx: Math.cos(G.aim) * 760, vy: Math.sin(G.aim) * 760 });
+}
+function boom(x, y, hue) { for (let i = 0; i < 16; i++) { const a = Math.random() * 6.28, s = 60 + Math.random() * 200; G.p.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .5 + Math.random() * .3, hue }); } }
+
+function step(dt) {
+  G.flash = Math.max(0, G.flash - dt); G.shake = Math.max(0, G.shake - dt * 14);
+  G.p.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
+  G.p = G.p.filter(p => p.life > 0);
+  if (G.state !== 'play') return;
+  G.time -= dt; G.cool -= dt;
+  // Aquí se evalúa el condicional del alumno en cada instante
+  if (G.reload <= 0 && G.rule(G.ammo)) { G.reload = RELOAD; G.reloads++; if (G.ammo > 0) G.early++; }
+  if (G.reload > 0) { G.reload -= dt; if (G.reload <= 0) { G.reload = 0; G.ammo = CAP; } }
+  G.stuck = (G.ammo === 0 && G.reload <= 0) ? G.stuck + dt : 0;
+  G.t.forEach(t => { t.x += t.vx * dt; t.ph += dt * 3; if (t.x < t.r) { t.x = t.r; t.vx *= -1; } if (t.x > W - t.r) { t.x = W - t.r; t.vx *= -1; } });
+  G.b.forEach(b => {
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    for (const t of G.t) if (!t.dead && Math.hypot(b.x - t.x, b.y - t.y) < t.r + 4) { t.dead = true; b.gone = true; boom(t.x, t.y, t.hue); break; }
+    if (b.x < -20 || b.x > W + 20 || b.y < -20) b.gone = true;
+  });
+  G.b = G.b.filter(b => !b.gone); G.t = G.t.filter(t => !t.dead);
+  if (!G.t.length) { G.state = 'win'; finish(true); }
+  else if (G.time <= 0) { G.time = 0; G.state = 'lose'; finish(false); }
+}
+
+function finish(won) {
+  if (won && ruleIsPerfect(G.rule)) say('ok', '¡Misión cumplida! Tu condicional recarga justo cuando balas llega a 0. Mecánica mejorada desbloqueada: recarga automática.');
+  else if (won) say('warn', '¡Ganaste, pero tu regla no es perfecta! Recargaste ' + G.reloads + ' veces. Intenta que recargue solo cuando balas valga 0.');
+  else if (G.stuck > 0.5) say('err', 'Se acabó el tiempo y la torreta se quedó sin balas. Tu condicional nunca fue verdadero, así que nunca recargó.');
+  else say('err', 'Se acabó el tiempo. Pasaste demasiado tiempo recargando (' + G.reloads + ' veces). Revisa tu condición.');
+}
+
+function draw() {
+  ctx.save();
+  if (G.shake > 0) ctx.translate((Math.random() - .5) * G.shake, (Math.random() - .5) * G.shake);
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#120d3a'); g.addColorStop(1, '#2a1560');
+  ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);
+  ctx.strokeStyle = 'rgba(120,100,255,.14)'; ctx.lineWidth = 1;
+  for (let x = 0; x <= W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y <= H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.fillStyle = '#1a1636'; ctx.fillRect(0, H - 16, W, 16);
+  G.t.forEach(t => { const r = t.r + Math.sin(t.ph) * 1.2; [1, .7, .4, .15].forEach((k, i) => { ctx.beginPath(); ctx.arc(t.x, t.y, r * k, 0, 6.283); ctx.fillStyle = i % 2 ? '#fff' : `hsl(${t.hue} 95% 58%)`; ctx.fill(); }); });
+  G.b.forEach(b => { ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 14; ctx.fillStyle = '#fff3a8'; ctx.beginPath(); ctx.arc(b.x, b.y, 4.5, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0; });
+  G.p.forEach(p => { ctx.globalAlpha = Math.max(0, p.life * 1.6); ctx.fillStyle = `hsl(${p.hue} 95% 62%)`; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }); ctx.globalAlpha = 1;
+  const col = ruleIsPerfect(G.rule) ? '#4cf0a0' : '#3ee6ff';
+  ctx.save(); ctx.translate(TX, TY); ctx.rotate(G.aim);
+  ctx.fillStyle = '#d9d4ff'; ctx.fillRect(0, -7, 44, 14); ctx.fillStyle = col; ctx.fillRect(34, -9, 14, 18);
+  if (G.flash > 0) { ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(48, 0); ctx.lineTo(70, -8); ctx.lineTo(64, 0); ctx.lineTo(70, 8); ctx.fill(); }
+  ctx.restore();
+  ctx.fillStyle = '#2f2864'; ctx.beginPath(); ctx.arc(TX, TY + 6, 28, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(TX, TY, 12, 0, 6.283); ctx.fill();
+  ctx.textAlign = 'center';
+  if (G.reload > 0 && G.state === 'play') {
+    ctx.fillStyle = 'rgba(16,13,31,.5)'; ctx.fillRect(0, 0, W, H);
+    ctx.font = '700 44px "Chakra Petch", sans-serif'; ctx.fillStyle = '#ff5c93'; ctx.fillText('¡RECARGANDO!', W / 2, H / 2 - 6);
+    ctx.fillStyle = '#2f2864'; ctx.fillRect(W / 2 - 110, H / 2 + 14, 220, 12);
+    ctx.fillStyle = '#ff5c93'; ctx.fillRect(W / 2 - 110, H / 2 + 14, 220 * (1 - G.reload / RELOAD), 12);
+  } else if (G.state === 'play' && G.ammo === 0) {
+    ctx.font = '700 34px "Chakra Petch", sans-serif'; ctx.fillStyle = '#ffd23f'; ctx.fillText('¡SIN BALAS!', W / 2, H / 2 - 6);
+    ctx.font = '700 16px "Chakra Petch", sans-serif'; ctx.fillStyle = '#ece9ff'; ctx.fillText('Tu código no ordenó recargar', W / 2, H / 2 + 20);
+  }
+  if (G.state !== 'play') {
+    const won = G.state === 'win';
+    ctx.fillStyle = 'rgba(16,13,31,.7)'; ctx.fillRect(0, 0, W, H);
+    ctx.font = '700 48px "Chakra Petch", sans-serif'; ctx.fillStyle = won ? '#4cf0a0' : '#ff5c93'; ctx.fillText(won ? '¡MISIÓN CUMPLIDA!' : 'TIEMPO AGOTADO', W / 2, H / 2);
+    ctx.font = '700 18px "Chakra Petch", sans-serif'; ctx.fillStyle = '#ece9ff'; ctx.fillText(won ? 'Todos los objetivos destruidos' : 'Quedaron ' + G.t.length + ' objetivos', W / 2, H / 2 + 34);
+  }
+  ctx.restore();
+}
+
+const pips = $('pips'); for (let i = 0; i < CAP; i++) pips.appendChild(document.createElement('i'));
+function hud() {
+  const a = $('ammo'); a.textContent = G.ammo + '/' + CAP; a.className = 'ammo' + (G.ammo === 0 ? ' low' : '');
+  [...pips.children].forEach((p, i) => p.classList.toggle('off', i >= G.ammo));
+  $('tleft').textContent = G.t.length; $('time').textContent = Math.ceil(G.time);
+}
+function loop(n) { const dt = Math.min((n - last) / 1000, .05); last = n; step(dt); draw(); hud(); requestAnimationFrame(loop); }
+
+function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+function aimAt(e) { const p = pos(e); let a = Math.atan2(p.y - TY, p.x - TX); if (a > 0) a = a < Math.PI / 2 ? -.12 : -Math.PI + .12; G.aim = Math.max(-Math.PI + .12, Math.min(-.12, a)); }
+cv.addEventListener('pointermove', aimAt);
+cv.addEventListener('pointerdown', e => { aimAt(e); shoot(); });
+
+function say(kind, text) { const m = $('msg'); m.className = kind; m.textContent = text; }
+function runCode() {
+  const r = parse($('code').value);
+  if (r.err) return say('err', r.err);
+  newGame(r.fn);
+  const cases = [0, 1, 4, 8].filter(a => r.fn(a));
+  if (ruleIsPerfect(r.fn)) say('ok', '¡Correcto! La pregunta (' + r.text + ') solo es verdadera con el cargador vacío. Dispara y verás la recarga automática.');
+  else if (!cases.length && ![0,1,2,3,4,5,6,7,8].some(a => r.fn(a))) say('warn', 'Tu pregunta (' + r.text + ') nunca es verdadera, así que la torreta no recargará jamás. Dispara y compruébalo.');
+  else if (r.fn(CAP)) say('warn', 'Tu pregunta (' + r.text + ') es verdadera incluso con el cargador lleno. La torreta recarga cuando no debe.');
+  else say('warn', 'Funciona, pero (' + r.text + ') hace recargar antes de quedarte sin balas. Pierdes tiempo. ¿Cuál es el valor exacto cuando está vacío?');
+}
+$('run').onclick = runCode;
+$('reset').onclick = () => { newGame(G.rule); say('', 'Misión reiniciada con tu último código.'); };
+$('hintBtn').onclick = () => { $('hint').style.display = 'block'; };
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runCode(); } });
+
+newGame(parse($('code').value).fn);
+requestAnimationFrame(loop);
+</script>
+<script src="../js/progress.js" data-leccion="2"></script>
+</body>
+</html>
