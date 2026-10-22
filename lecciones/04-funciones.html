@@ -30,7 +30,7 @@
       <div><span class="tag t3">(base, multiplicador)</span> los ingredientes</div>
       <div><span class="tag t1">return</span> entrega el resultado</div>
     </div>
-    <div class="mission"><b>Misión:</b> el jefe tiene 900 de vida y 25 segundos. Tu función ignora el multiplicador, así que el núcleo rojo no hace más daño. Arréglala y apunta al núcleo.</div>
+    <div class="mission"><b>Misión:</b> el jefe tiene 700 de vida y 25 segundos. Tu función ignora el multiplicador, así que el núcleo rojo no hace más daño. Arréglala y apunta al núcleo.</div>
   </aside>
 
   <main class="main">
@@ -71,7 +71,7 @@ function calcularDanio(base, multiplicador) {
 
 <script src="../js/engine.js"></script>
 <script>
-const HPMAX = 900, CD = .3;
+const HPMAX = 700, CD = .4;
 let G;
 function parse(code) {
   const src = stripCode(code);
@@ -88,7 +88,7 @@ function parse(code) {
   return { f, expr, a, b };
 }
 const perfect = f => f(10, 3) === 30 && f(10, 1) === 10;
-function newGame(f) { G = { f, hp: HPMAX, time: 25, cd: 0, state: 'play', b: [], x: W / 2, vx: 110, last: 10, hit: 0 }; setUnlocked(perfect(f)); }
+function newGame(f) { G = { f, hp: HPMAX, time: 25, cd: 0, state: 'play', b: [], x: W / 2, vx: 80, last: 10, hit: 0 }; setUnlocked(perfect(f)); }
 function onShoot() {
   if (G.state !== 'play' || G.cd > 0) return;
   G.cd = CD; flash = .08; shake = 2;
@@ -102,7 +102,7 @@ function step(dt) {
     b.x += b.vx * dt; b.y += b.vy * dt;
     const d = Math.hypot(b.x - G.x, b.y - 110);
     if (d < 62) {
-      b.gone = true; const crit = d < 22, dmg = G.f(10, crit ? 3 : 1);
+      b.gone = true; const crit = d < 34, dmg = G.f(10, crit ? 3 : 1);
       G.hp -= dmg; G.last = dmg; boom(b.x, b.y, crit ? 48 : 190, crit ? 12 : 5);
       floater(b.x, b.y - 10, (crit ? '¡NÚCLEO! ' : '') + dmg, crit ? '#ffd23f' : '#ece9ff', crit ? 24 : 18);
     }
@@ -117,8 +117,8 @@ function render() {
   ctx.fillStyle = '#2f2864'; ctx.beginPath(); ctx.arc(x, y, 62, 0, 6.283); ctx.fill();
   ctx.strokeStyle = '#ff5c93'; ctx.lineWidth = 5; ctx.stroke();
   ctx.fillStyle = '#ece9ff'; ctx.fillRect(x - 36, y - 24, 14, 10); ctx.fillRect(x + 22, y - 24, 14, 10);
-  ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y, 22, 0, 6.283); ctx.fill();
-  ctx.fillStyle = '#ff5c93'; ctx.beginPath(); ctx.arc(x, y, 14 + Math.sin(performance.now() / 150) * 2, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y, 34, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#ff5c93'; ctx.beginPath(); ctx.arc(x, y, 22 + Math.sin(performance.now() / 150) * 2, 0, 6.283); ctx.fill();
   bullets(G.b); turret(perfect(G.f) ? '#4cf0a0' : '#3ee6ff');
   if (G.state !== 'play') overlay(G.state === 'win', G.state === 'win' ? 'Jefe destruido' : 'Al jefe le quedaban ' + Math.ceil(G.hp) + ' de vida');
 }
@@ -135,5 +135,6 @@ newGame(parse($('code').value).f);
 requestAnimationFrame(loop);
 </script>
 <script src="../js/progress.js" data-leccion="4"></script>
+<script src="../js/practice.js" data-leccion="4"></script>
 </body>
 </html>

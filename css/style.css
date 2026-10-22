@@ -64,3 +64,17 @@ textarea{font:700 1rem/1.7 var(--mono);color:#e6f6ff;background:transparent;bord
 .opt.good{border-color:var(--ok);background:#4cf0a01f}.opt.bad{border-color:var(--pink);background:#ff5c931c}
 .dots{display:flex;gap:6px}.dots i{width:28px;height:8px;border-radius:9px;background:var(--panel2)}.dots i.cur{background:var(--cyan)}.dots i.ok{background:var(--ok)}.dots i.no{background:var(--pink)}
 .score{font:700 2.4rem var(--ui);color:var(--gold);margin:6px 0}
+
+/* Práctica guiada */
+.practice{border-color:var(--cyan)}
+.pstep{color:var(--muted);font:700 .85rem var(--ui);text-transform:uppercase;letter-spacing:.04em}
+.pq{font-size:1.08rem;margin:8px 0}
+.pcode{font:700 1rem/1.7 var(--mono);background:#0c0a1d;border:1px solid var(--line);border-radius:10px;padding:10px 12px;white-space:pre-wrap;color:#e6f6ff;margin:8px 0;overflow-x:auto}
+.pcode input{font:inherit;color:var(--gold);background:#2a2460;border:2px solid var(--gold);border-radius:6px;padding:0 6px;width:6ch;text-align:center}
+.pta{display:block;width:100%;font:700 1rem/1.7 var(--mono);color:#e6f6ff;background:#0c0a1d;border:1px solid var(--line);border-radius:10px;padding:10px 12px;height:120px;resize:none;white-space:pre}
+.pviz{margin:8px 0;padding:10px 12px;background:var(--panel2);border-radius:10px;font-size:1.05rem;line-height:1.6;word-break:break-all}
+.pfb{margin-top:10px;padding:10px 14px;border-radius:12px;background:var(--panel2)}
+.pfb.ok{background:#4cf0a01f;border:1px solid var(--ok)}
+.pfb.err{background:#ff5c931c;border:1px solid var(--pink)}
+.locked{opacity:.4;filter:grayscale(.6)}
+.plock{margin-top:12px;color:var(--gold);font-size:.92rem}

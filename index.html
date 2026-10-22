@@ -12,19 +12,23 @@
 h1{font:700 2.2rem var(--ui);margin:0}.sub{color:var(--muted);margin:6px 0 24px}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .card{display:block;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .12s,border-color .12s;position:relative}
-.card:hover{transform:translateY(-3px);border-color:var(--cyan)}
+a.card:hover{transform:translateY(-3px);border-color:var(--cyan)}
 .card b{font:700 1.15rem var(--ui);display:block;margin:6px 0 4px}.card span{color:var(--muted);font-size:.92rem}
-.num{font:700 .8rem var(--ui);color:var(--cyan)}
-.done::after{content:"✓ Completada";position:absolute;top:14px;right:14px;font:700 .75rem var(--ui);color:#06281a;background:var(--ok);padding:2px 8px;border-radius:99px}
-.link{background:none;border:0;color:var(--muted);text-decoration:underline;font:600 .85rem var(--body);margin-top:20px;padding:0;cursor:pointer}
+.card .num{font:700 .8rem var(--ui);color:var(--cyan)}
+.card.lock{opacity:.5}.card.lock .num{color:var(--muted)}
+.card .tag2{position:absolute;top:14px;right:14px;font:700 .75rem var(--ui);padding:2px 8px;border-radius:99px}
+.done .tag2{color:#06281a;background:var(--ok)}.lock .tag2{background:var(--panel2);color:var(--muted)}
+.next{border-color:var(--cyan)}.next .tag2{background:var(--cyan);color:#06222a}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font:600 .85rem var(--body);margin:20px 16px 0 0;padding:0;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Academia de Tiro</h1>
-  <p class="sub">Aprende a programar disparando. Completa las lecciones en orden y termina con el examen final.</p>
+  <p class="sub">Aprende a programar disparando. Cada lección tiene ejercicios de práctica y una misión final. Completa una para desbloquear la siguiente.</p>
   <div class="grid" id="grid"></div>
   <button class="link" id="reset">Borrar mi progreso</button>
+  <button class="link" id="free">Desbloquear todas las lecciones (modo adulto)</button>
 </div>
 <script>
 const L = [
@@ -34,10 +38,18 @@ const L = [
   ['04-funciones', 'Funciones', 'El arsenal: recetas con parámetros y return.'],
   ['05-arrays', 'Arrays + Examen final', 'El inventario de armas y un examen de 5 preguntas.']
 ];
-const got = i => { try { return localStorage.getItem('academia:leccion' + (i + 1)) === '1'; } catch (e) { return false; } };
-document.getElementById('grid').innerHTML = L.map((l, i) =>
-  `<a class="card ${got(i) ? 'done' : ''}" href="lecciones/${l[0]}.html"><span class="num">LECCIÓN ${i + 1}</span><b>${l[1]}</b><span>${l[2]}</span></a>`).join('');
-document.getElementById('reset').onclick = () => { try { for (let i = 1; i <= 5; i++) localStorage.removeItem('academia:leccion' + i); } catch (e) {} location.reload(); };
+const get = k => { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } };
+const free = get('academia:libre');
+let nextMarked = false;
+document.getElementById('grid').innerHTML = L.map((l, i) => {
+  const done = get('academia:leccion' + (i + 1)), open = free || i === 0 || get('academia:leccion' + i);
+  const body = '<span class="num">LECCIÓN ' + (i + 1) + '</span><b>' + l[1] + '</b><span>' + l[2] + '</span>';
+  if (!open) return '<div class="card lock">' + body + '<span class="tag2">🔒 Bloqueada</span></div>';
+  const cur = !done && !nextMarked; if (cur) nextMarked = true;
+  return '<a class="card ' + (done ? 'done' : cur ? 'next' : '') + '" href="lecciones/' + l[0] + '.html">' + body + (done ? '<span class="tag2">✓ Completada</span>' : cur ? '<span class="tag2">Sigue aquí</span>' : '') + '</a>';
+}).join('');
+document.getElementById('reset').onclick = () => { if (!confirm('¿Borrar todo el progreso?')) return; try { Object.keys(localStorage).filter(k => k.startsWith('academia:')).forEach(k => localStorage.removeItem(k)); } catch (e) {} location.reload(); };
+document.getElementById('free').onclick = () => { try { localStorage.setItem('academia:libre', '1'); } catch (e) {} location.reload(); };
 </script>
 </body>
 </html>
